@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple Messaging App Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Scrollbar styling for chat messages */
+    #messages {
+      scrollbar-width: thin;
+      scrollbar-color: #a0aec0 transparent;
+    }
+    #messages::-webkit-scrollbar {
+      width: 8px;
+    }
+    #messages::-webkit-scrollbar-thumb {
+      background-color: #a0aec0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen">
+  <header class="bg-blue-600 text-white p-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold">Simple Messaging App</h1>
+    <div>
+      <label for="username" class="sr-only">Username</label>
+      <input
+        type="text"
+        id="username"
+        placeholder="Enter username"
+        class="rounded px-2 py-1 text-black"
+        autocomplete="off"
+      />
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col p-4 max-w-3xl mx-auto w-full">
+    <div
+      id="messages"
+      class="flex-1 bg-white rounded shadow p-4 overflow-y-auto mb-4"
+      aria-live="polite"
+      aria-relevant="additions"
+      role="log"
+    >
+      <!-- Messages will appear here -->
+    </div>
+
+    <form id="messageForm" class="flex space-x-2" aria-label="Send message form">
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="Type your message..."
+        class="flex-1 rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        autocomplete="off"
+        required
+      />
+      <button
+        type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
+        aria-label="Send message"
+      >
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </form>
+
+    <button
+      id="clearChat"
+      class="mt-4 text-sm text-red-600 hover:underline self-end"
+      aria-label="Clear chat history"
+      type="button"
+    >
+      Clear Chat
+    </button>
+  </main>
+
+  <script>
+    (() => {
+      const usernameInput = document.getElementById('username');
+      const messagesContainer = document.getElementById('messages');
+      const messageForm = document.getElementById('messageForm');
+      const messageInput = document.getElementById('messageInput');
+      const clearChatBtn = document.getElementById('clearChat');
+
+      // Load username from localStorage if exists
+      const savedUsername = localStorage.getItem('username');
+      if (savedUsername) {
+        usernameInput.value = savedUsername;
+      }
+
+      // Load messages from localStorage
+      let messages = JSON.parse(localStorage.getItem('messages') || '[]');
+
+      // Function to render messages
+      function renderMessages() {
+        messagesContainer.innerHTML = '';
+        messages.forEach(({ username, text, timestamp }) => {
+          const messageEl = document.createElement('div');
+          messageEl.className = 'mb-3';
+
+          const time = new Date(timestamp);
+          const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          messageEl.innerHTML = `
+            <p class="text-sm text-gray-500 mb-1">${username} <span class="text-xs text-gray-400">(${timeString})</span></p>
+            <p class="bg-blue-100 inline-block px-3 py-2 rounded-lg max-w-xs break-words">${text}</p>
+          `;
+          messagesContainer.appendChild(messageEl);
+        });
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      // Initial render
+      renderMessages();
+
+      // Save username on change
+      usernameInput.addEventListener('change', () => {
+        localStorage.setItem('username', usernameInput.value.trim());
+      });
+
+      // Handle message form submit
+      messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const username = usernameInput.value.trim() || 'Anonymous';
+        const text = messageInput.value.trim();
+        if (!text) return;
+
+        const newMessage = {
+          username,
+          text,
+          timestamp: Date.now(),
+        };
+        messages.push(newMessage);
+        localStorage.setItem('messages', JSON.stringify(messages));
+        renderMessages();
+        messageInput.value = '';
+        messageInput.focus();
+      });
+
+      // Clear chat button
+      clearChatBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear the chat history?')) {
+          messages = [];
+          localStorage.removeItem('messages');
+          renderMessages();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
